@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тест</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #6c8fff;
+    --accent-dim: rgba(108,143,255,0.12);
+    --correct: #3ecf8e;
+    --correct-dim: rgba(62,207,142,0.12);
+    --wrong: #f96060;
+    --wrong-dim: rgba(249,96,96,0.12);
+    --text: #e8eaf0;
+    --muted: #6b7080;
+    --radius: 12px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
+  }
+
+  h1 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 36px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 16px;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 24px;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-dim); }
+  .upload-zone svg { width: 40px; height: 40px; color: var(--muted); margin-bottom: 12px; }
+  .upload-zone p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+  .upload-zone strong { color: var(--text); }
+  .upload-zone input { display: none; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+    font-family: inherit;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn.outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Progress bar */
+  .progress-wrap { width: 100%; max-width: 680px; margin-bottom: 20px; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+  .progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+
+  /* Question */
+  .q-number { font-size: 0.75rem; color: var(--accent); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+  .q-text { font-size: 1.05rem; font-weight: 500; line-height: 1.55; margin-bottom: 24px; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+
+  .option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .option:hover:not(.disabled) { border-color: var(--accent); background: var(--accent-dim); }
+  .option.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .option.correct { border-color: var(--correct); background: var(--correct-dim); }
+  .option.wrong { border-color: var(--wrong); background: var(--wrong-dim); }
+  .option.disabled { cursor: default; }
+
+  .opt-letter {
+    width: 30px; height: 30px; min-width: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: var(--muted);
+    transition: all 0.15s;
+  }
+  .option.selected .opt-letter { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .option.correct .opt-letter { background: var(--correct); border-color: var(--correct); color: #fff; }
+  .option.wrong .opt-letter { background: var(--wrong); border-color: var(--wrong); color: #fff; }
+
+  .opt-text { font-size: 0.95rem; line-height: 1.4; }
+
+  .feedback {
+    margin-top: 18px; padding: 12px 16px;
+    border-radius: 8px; font-size: 0.88rem; font-weight: 500;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: var(--correct-dim); color: var(--correct); }
+  .feedback.bad { background: var(--wrong-dim); color: var(--wrong); }
+
+  .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 10px; }
+
+  /* Results */
+  .result-score {
+    font-family: 'Manrope', sans-serif;
+    font-size: 3.5rem; font-weight: 800; color: #fff;
+    text-align: center; margin: 8px 0 4px;
+  }
+  .result-label { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .result-bar-wrap { margin-bottom: 24px; }
+  .result-bars { display: flex; gap: 3px; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .result-bar-correct { background: var(--correct); }
+  .result-bar-wrong { background: var(--wrong); }
+  .result-stats { display: flex; gap: 20px; justify-content: center; margin-bottom: 28px; }
+  .stat { text-align: center; }
+  .stat-val { font-family: 'Manrope', sans-serif; font-size: 1.5rem; font-weight: 800; }
+  .stat-val.c { color: var(--correct); }
+  .stat-val.w { color: var(--wrong); }
+  .stat-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* Review */
+  .review-item { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .review-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .review-q { font-size: 0.92rem; font-weight: 500; margin-bottom: 8px; }
+  .review-answer { font-size: 0.85rem; padding: 6px 10px; border-radius: 6px; display: inline-block; }
+  .review-answer.ok { background: var(--correct-dim); color: var(--correct); }
+  .review-answer.bad { background: var(--wrong-dim); color: var(--wrong); }
+
+  .hidden { display: none !important; }
+
+  .file-name {
+    margin-bottom: 20px; padding: 10px 14px;
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    border-radius: 8px; font-size: 0.85rem; color: var(--accent);
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; max-width: 680px;
+  }
+  .file-name button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+</style>
+</head>
+<body>
+
+<!-- SCREEN: Upload -->
+<div id="screen-upload">
+  <h1>Тест</h1>
+  <p class="tagline">Загрузите файл с вопросами и начните тест</p>
+
+  <div class="upload-zone" id="dropzone">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+    </svg>
+    <p><strong>Перетащите .txt файл сюда</strong><br>или нажмите для выбора</p>
+    <input type="file" id="file-input" accept=".txt">
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:center;max-width:680px;width:100%;margin-bottom:20px">
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+    <span style="color:var(--muted);font-size:0.8rem">или</span>
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+  </div>
+
+  <div class="card" style="padding:20px">
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px">Вставьте текст теста вручную:</p>
+    <textarea id="paste-area" rows="8" placeholder="Вопрос 1. Как называется...&#10;А) Вариант&#10;Б) Вариант&#10;В) Вариант&#10;Ответ: А"
+      style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:inherit;font-size:0.88rem;resize:vertical;outline:none"></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button class="btn" onclick="loadFromPaste()">Загрузить текст</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:16px 20px">
+    <p style="font-size:0.8rem;color:var(--muted);line-height:1.6">
+      <strong style="color:var(--text)">Формат файла:</strong> нумерация вопросов необязательна. Варианты ответов начинаются с буквы и скобки или точки (А), Б., В) и т.д.). Строка с ответом: <code style="background:var(--bg);padding:2px 6px;border-radius:4px">Ответ: А</code>
+    </p>
+  </div>
+</div>
+
+<!-- SCREEN: Quiz -->
+<div id="screen-quiz" class="hidden">
+  <h1>Тест</h1>
+  <div id="file-badge" class="file-name hidden">
+    <span id="file-badge-name"></span>
+    <button onclick="resetAll()" title="Загрузить другой файл">✕</button>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="prog-label">Вопрос 1 из 10</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="q-number" id="q-number">Вопрос 1</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options-list"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="actions">
+      <button class="btn outline hidden" id="btn-skip" onclick="skipQuestion()">Пропустить</button>
+      <button class="btn hidden" id="btn-next" onclick="nextQuestion()">Следующий →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: Results -->
+<div id="screen-results" class="hidden">
+  <h1>Результат</h1>
+  <p class="tagline" id="res-tagline"></p>
+
+  <div class="card" style="text-align:center">
+    <div class="result-score" id="res-score"></div>
+    <div class="result-label">правильных ответов</div>
+    <div class="result-bar-wrap">
+      <div class="result-bars" id="res-bars"></div>
+    </div>
+    <div class="result-stats">
+      <div class="stat"><div class="stat-val c" id="res-correct"></div><div class="stat-lbl">Верно</div></div>
+      <div class="stat"><div class="stat-val w" id="res-wrong"></div><div class="stat-lbl">Неверно</div></div>
+      <div class="stat"><div class="stat-val" id="res-total" style="color:var(--text)"></div><div class="stat-lbl">Всего</div></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn" onclick="restartQuiz()">Пройти снова</button>
+      <button class="btn outline" onclick="toggleReview()">Разбор ошибок</button>
+      <button class="btn outline" onclick="resetAll()">Новый тест</button>
+    </div>
+  </div>
+
+  <div id="review-section" class="hidden">
+    <div class="card" id="review-list"></div>
+  </div>
+</div>
+
+<script>
+  let questions = [];
+  let current = 0;
+  let answered = [];
+  let fileName = '';
+
+  // ─── Parse ───────────────────────────────────────────────────────────────
+  function parseQuestions(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const qs = [];
+    let q = null;
+
+    const optRe = /^([А-ЯA-Г])[).\s]+(.+)/i;
+    const ansRe = /^[Оо]твет[:\s]+([А-ЯA-Г])/i;
+    const qNumRe = /^\d+[.)]\s*/;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const ansMatch = line.match(ansRe);
+      const optMatch = line.match(optRe);
+
+      if (ansMatch) {
+        if (q) { q.answer = ansMatch[1].toUpperCase(); qs.push(q); q = null; }
+        continue;
+      }
+      if (optMatch) {
+        if (q) q.options.push({ letter: optMatch[1].toUpperCase(), text: optMatch[2].trim() });
+        continue;
+      }
+      // It's a question line
+      if (q && q.options.length === 0) {
+        // append to previous question text (multiline)
+        q.text += ' ' + line;
+      } else {
+        q = { text: line.replace(qNumRe, ''), options: [], answer: '' };
+      }
+    }
+    return qs.filter(q => q.options.length >= 2 && q.answer);
+  }
+
+  // ─── Load ─────────────────────────────────────────────────────────────────
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0]); });
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault(); dropzone.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if (f) readFile(f);
+  });
+
+  function readFile(f) {
+    fileName = f.name;
+    const r = new FileReader();
+    r.onload = e => startQuiz(e.target.result);
+    r.readAsText(f, 'utf-8');
+  }
+
+  function loadFromPaste() {
+    const txt = document.getElementById('paste-area').value.trim();
+    if (!txt) return;
+    fileName = '';
+    startQuiz(txt);
+  }
+
+  function startQuiz(text) {
+    questions = parseQuestions(text);
+    if (!questions.length) { alert('Не удалось найти вопросы. Проверьте формат файла.'); return; }
+    current = 0;
+    answered = new Array(questions.length).fill(null);
+    show('screen-quiz');
+    const badge = document.getElementById('file-badge');
+    if (fileName) {
+      document.getElementById('file-badge-name').textContent = '📄 ' + fileName;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+    renderQuestion();
+  }
+
+  // ─── Quiz UI ──────────────────────────────────────────────────────────────
+  function renderQuestion() {
+    const q = questions[current];
+    const total = questions.length;
+    const pct = Math.round((current / total) * 100);
+
+    document.getElementById('prog-label').textContent = `Вопрос ${current + 1} из ${total}`;
+    document.getElementById('prog-pct').textContent = pct + '%';
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('q-number').textContent = `Вопрос ${current + 1}`;
+    document.getElementById('q-text').textContent = q.text;
+
+    const list = document.getElementById('options-list');
+    list.innerHTML = '';
+    q.options.forEach(opt => {
+      const div = document.createElement('div');
+      div.className = 'option';
+      div.dataset.letter = opt.letter;
+      div.innerHTML = `<div class="opt-letter">${opt.letter}</div><div class="opt-text">${opt.text}</div>`;
+      div.addEventListener('click', () => selectOption(opt.letter));
+      list.appendChild(div);
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback';
+    fb.textContent = '';
+    document.getElementById('btn-next').classList.add('hidden');
+    document.getElementById('btn-skip').classList.remove('hidden');
+  }
+
+  function selectOption(letter) {
+    if (answered[current] !== null) return;
+    answered[current] = letter;
+
+    const q = questions[current];
+    const correct = q.answer.toUpperCase();
+    const isRight = letter.toUpperCase() === correct;
+
+    document.querySelectorAll('.option').forEach(el => {
+      el.classList.add('disabled');
+      const l = el.dataset.letter.toUpperCase();
+      if (l === correct) el.classList.add('correct');
+      else if (l === letter.toUpperCase() && !isRight) el.classList.add('wrong');
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback show ' + (isRight ? 'ok' : 'bad');
+    fb.textContent = isRight ? '✓ Верно!' : `✗ Неверно. Правильный ответ: ${correct}`;
+
+    document.getElementById('btn-skip').classList.add('hidden');
+    document.getElementById('btn-next').classList.remove('hidden');
+    document.getElementById('btn-next').textContent = current < questions.length - 1 ? 'Следующий →' : 'Завершить';
+  }
+
+  function skipQuestion() {
+    answered[current] = '__skipped__';
+    nextQuestion();
+  }
+
+  function nextQuestion() {
+    if (current < questions.length - 1) {
+      current++;
+      renderQuestion();
+    } else {
+      showResults();
+    }
+  }
+
+  // ─── Results ──────────────────────────────────────────────────────────────
+  function showResults() {
+    const total = questions.length;
+    const correct = answered.filter((a, i) => a && a.toUpperCase() === questions[i].answer.toUpperCase()).length;
+    const wrong = total - correct;
+    const pct = Math.round((correct / total) * 100);
+
+    document.getElementById('res-score').textContent = pct + '%';
+    document.getElementById('res-correct').textContent = correct;
+    document.getElementById('res-wrong').textContent = wrong;
+    document.getElementById('res-total').textContent = total;
+
+    const tag = pct >= 80 ? 'Отличный результат!' : pct >= 60 ? 'Неплохо, но есть куда расти.' : 'Нужно повторить материал.';
+    document.getElementById('res-tagline').textContent = tag;
+
+    // Bar
+    const bars = document.getElementById('res-bars');
+    bars.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const div = document.createElement('div');
+      div.style.flex = '1';
+      div.style.borderRadius = '2px';
+      const a = answered[i];
+      div.className = (a && a.toUpperCase() === questions[i].answer.toUpperCase()) ? 'result-bar-correct' : 'result-bar-wrong';
+      bars.appendChild(div);
+    }
+
+    // Review
+    const reviewList = document.getElementById('review-list');
+    reviewList.innerHTML = '<h3 style="font-family:Manrope;font-weight:700;margin-bottom:18px">Разбор ошибок</h3>';
+    let hasErrors = false;
+    questions.forEach((q, i) => {
+      const a = answered[i];
+      const isRight = a && a.toUpperCase() === q.answer.toUpperCase();
+      if (!isRight) {
+        hasErrors = true;
+        const item = document.createElement('div');
+        item.className = 'review-item';
+        const userAns = (!a || a === '__skipped__') ? 'Пропущен' : a;
+        item.innerHTML = `<div class="review-q">${i+1}. ${q.text}</div>
+          <span class="review-answer bad">Ваш ответ: ${userAns}</span>
+          &nbsp;
+          <span class="review-answer ok">Правильно: ${q.answer}</span>`;
+        reviewList.appendChild(item);
+      }
+    });
+    if (!hasErrors) {
+      reviewList.innerHTML += '<p style="color:var(--correct);font-size:0.9rem">Все ответы верны! 🎉</p>';
+    }
+
+    show('screen-results');
+    document.getElementById('review-section').classList.add('hidden');
+  }
+
+  function toggleReview() {
+    const s = document.getElementById('review-section');
+    s.classList.toggle('hidden');
+    if (!s.classList.contains('hidden')) s.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function restartQuiz() {
+    current = 0;
+    answered = new Array(questions.length).fill(null);
+    show('screen-quiz');
+    renderQuestion();
+  }
+
+  function resetAll() {
+    show('screen-upload');
+    document.getElementById('paste-area').value = '';
+    fileInput.value = '';
+    questions = [];
+  }
+
+  function show(id) {
+    ['screen-upload','screen-quiz','screen-results'].forEach(s => {
+      document.getElementById(s).classList.toggle('hidden', s !== id);
+    });
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
